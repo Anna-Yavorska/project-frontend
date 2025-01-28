@@ -13,7 +13,7 @@
 <h2>Accounts list:</h2>
 
 <div id="players-per-page-wrapper" class="d-flex align-items-center gap-3">
-    <label for="players-per-page-select" class="form-label fs-5 mb-0">Players per page:</label>
+    <label for="players-per-page-select" class="form-label fs-5 mb-0">Count per page:</label>
 <select id="players-per-page-select" class="form-select form-select-sm" style="width: auto;">
     <option value="3" selected="selected">3</option>
     <option value="5">5</option>
@@ -31,6 +31,8 @@
         <th>Level</th>
         <th>Birthday</th>
         <th>Banned</th>
+        <th>Edit</th>
+        <th>Delete</th>
     </tr>
     </thead>
     <tbody id="playersTableBody">
@@ -39,6 +41,7 @@
 </table>
 
 <div id="d-flex flex-row">
+    Pages:
     <button type="button" class="btn btn-outline-secondary" id="previousPageButton"><-</button>
     <div class="d-inline-block" id="page-buttons-container"></div>
     <button type="button" class="btn btn-outline-secondary" id="nextPageButton">-></button>

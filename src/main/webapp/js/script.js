@@ -74,6 +74,8 @@ function updateTable(json) {
         let level = document.createElement("td");
         let birthday = document.createElement("td");
         let banned = document.createElement("td");
+        let edit = document.createElement("td");
+        let deleteCell = document.createElement("td");
 
         idCell.textContent = player.id;
         nameCell.textContent = player.name;
@@ -85,6 +87,23 @@ function updateTable(json) {
         birthday.textContent = date.toLocaleDateString("uk-UA");
         banned.textContent = player.banned;
 
+        let editImg = document.createElement("img");
+        editImg.src = "img/edit.png";
+        editImg.alt = "Edit";
+        editImg.style.width = "35px";
+        editImg.style.cursor="pointer";
+        edit.classList.add("text-center");
+        edit.appendChild(editImg);
+
+        let deleteImg = document.createElement("img");
+        deleteImg.src = "img/delete.png";
+        deleteImg.alt = "Delete";
+        deleteImg.style.width = "35px";
+        deleteImg.style.cursor="pointer";
+        deleteCell.classList.add("text-center");
+        deleteCell.appendChild(deleteImg);
+
+
         row.appendChild(idCell);
         row.appendChild(nameCell);
         row.appendChild(title);
@@ -93,6 +112,8 @@ function updateTable(json) {
         row.appendChild(level);
         row.appendChild(birthday);
         row.appendChild(banned);
+        row.appendChild(edit);
+        row.appendChild(deleteCell);
 
         tableBody.appendChild(row);
     })
