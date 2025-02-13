@@ -1,6 +1,11 @@
 const BASE_URL = "http://localhost:8080";
 
 let playersPerPage;
+let currentPage = 0;
+
+const races = ["HUMAN", "DWARF", "ELF", "GIANT", "ORC", "TROLL", "HOBBIT"];
+const professions = ["WARRIOR", "ROGUE", "SORCERER", "CLERIC", "PALADIN", "NAZGUL", "WARLOCK", "DRUID"];
+const banned = ["true", "false"];
 
 window.addEventListener("DOMContentLoaded", function () {
     initValues();
@@ -28,12 +33,16 @@ function generateButtons(playersAmount){
         button.textContent = i;
         button.classList.add("btn");
         button.classList.add("btn-outline-secondary");
-        button.addEventListener("click", ()=>getPlayers(i - 1, playersPerPage).then(players => updateTable(players)));
+        button.addEventListener("click", ()=>{
+            currentPage = i - 1;
+            getPlayers(currentPage, playersPerPage)
+                .then(players => updateTable(players))
+        });
         buttonsContainer.appendChild(button);
     }
 }
 
-function getPlayers(pageNumber = 0, pageSize = playersPerPage) {
+function getPlayers(pageNumber = currentPage, pageSize = playersPerPage) {
     const requestOptions = {
         method: "GET",
     };
@@ -60,12 +69,129 @@ function getPlayersAmount() {
         .then((response) => response.text());
 }
 
+function deletePlayer(id){
+    if (!confirm('Do you really want delete the player?')){
+        return;
+    }
+    const requestOptions= {
+        method: "DELETE",
+    };
+    const requestUrl = BASE_URL + "/rest/players/" + id;
+    fetch(requestUrl, requestOptions)
+        .then(response=>{
+        if (response.ok){
+            alert("Player is deleted");
+            console.log(id);
+            reloadPlayers();
+        }else {
+            alert("You can't delete this player");
+        }
+    })
+        .catch(error => console.error(error));
+}
+
+function reloadPlayers(){
+    getPlayers(currentPage, playersPerPage)
+        .then(players => updateTable(players));
+}
+
+function editAccountHandler(e){
+    const accountId = e.currentTarget.value;
+
+    const $currentRow = document.querySelector(`tr[data-account-id='${accountId}']`);
+    const $currentRemoveImage = $currentRow.querySelector('.delete-cell img');
+    const $currentImage = $currentRow.querySelector('button.edit-button img');
+
+    const cells = $currentRow.querySelectorAll("td");
+
+    const $currentName = cells[1];
+    const $currentTitle = cells[2];
+    const $currentRace = cells[3];
+    const $currentProfession = cells[4];
+    const $currentBanned = cells[7];
+
+    $currentImage.src = "img/save.png";
+    $currentRemoveImage.style.display = "none";
+
+    $currentImage.addEventListener("click", () =>{
+        const params = {
+            accountId: accountId,
+            data: {
+                name: $currentName.childNodes[0].getAttribute('data-value'),
+                title: $currentTitle.childNodes[0].getAttribute('data-value'),
+                race: $currentRace.querySelector(".form-select").value,
+                profession: $currentProfession.querySelector(".form-select").value,
+                banned: $currentBanned.querySelector(".form-select").value,
+            }
+        }
+
+        updateAccount(params);
+    })
+
+    $currentName.childNodes[0].replaceWith(createInput($currentName.innerHTML))
+    $currentTitle.childNodes[0].replaceWith(createInput($currentTitle.innerHTML))
+    $currentRace.childNodes[0].replaceWith(createSelect(races, $currentRace.getAttribute("data-value")))
+    $currentProfession.childNodes[0].replaceWith(createSelect(professions, $currentProfession.getAttribute("data-value")))
+    $currentBanned.childNodes[0].replaceWith(createSelect(banned, $currentBanned.getAttribute("data-value")))
+
+    function createSelect(options, selectedValue) {
+        let select = document.createElement("select");
+        select.classList.add("form-select");
+        options.forEach(option => {
+            let opt = document.createElement("option");
+            opt.value = option;
+            opt.textContent = option;
+            if (option === selectedValue) {
+                opt.selected = true;
+            }
+            select.appendChild(opt);
+        });
+        return select;
+    }
+}
+function createInput(value) {
+    const $htmlInputElement = document.createElement('input');
+
+    $htmlInputElement.setAttribute('type', 'text');
+    $htmlInputElement.setAttribute('value', value);
+    $htmlInputElement.setAttribute('data-value', value);
+
+    $htmlInputElement.addEventListener('input', e=>{
+        $htmlInputElement.setAttribute('data-value', `${e.currentTarget.value}`)
+    })
+    return $htmlInputElement;
+}
+
+function updateAccount({accountId, data}){
+    const requestUrl = BASE_URL + "/rest/players/" + accountId;
+
+    fetch(requestUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Data-Type": "json",
+        },
+        body: JSON.stringify(data),
+    })
+        .then(response => {
+
+            if (response.ok) {
+                reloadPlayers();
+            } else {
+                alert("Failed to update player. Please check the data.");
+            }
+        })
+        .catch(error => console.error("Error updating player:", error));
+}
+
 function updateTable(json) {
     let tableBody = document.getElementById("playersTableBody");
     tableBody.innerHTML = "";
 
     json.forEach((player) => {
         let row = document.createElement("tr");
+        row.setAttribute("data-account-id", player.id);
+
         let idCell = document.createElement("td");
         let nameCell = document.createElement("td");
         let title = document.createElement("td");
@@ -78,29 +204,52 @@ function updateTable(json) {
         let deleteCell = document.createElement("td");
 
         idCell.textContent = player.id;
+
         nameCell.textContent = player.name;
+        nameCell.classList.add("name-cell");
+        nameCell.setAttribute("data-value", player.name);
+
         title.textContent = player.title;
+        title.classList.add("title-cell");
+        title.setAttribute("data-value", player.title);
+
         race.textContent = player.race;
+        race.classList.add("race-cell");
+        race.setAttribute("data-value", player.race);
+
         profession.textContent = player.profession;
+        profession.classList.add("profession-cell");
+        profession.setAttribute("data-value", player.profession);
+
         level.textContent = player.level;
+
         let date = new Date(player.birthday);
         birthday.textContent = date.toLocaleDateString("uk-UA");
-        banned.textContent = player.banned;
 
+        banned.textContent = player.banned;
+        banned.classList.add("banned-cell");
+        banned.setAttribute("data-value", player.banned);
+
+        let editBtn = document.createElement("button");
+        editBtn.classList.add("btn", "edit-button");
         let editImg = document.createElement("img");
         editImg.src = "img/edit.png";
         editImg.alt = "Edit";
-        editImg.style.width = "35px";
         editImg.style.cursor="pointer";
+        editBtn.appendChild(editImg);
+        editBtn.value = player.id;
+        editBtn.addEventListener("click", editAccountHandler);
         edit.classList.add("text-center");
-        edit.appendChild(editImg);
+        edit.classList.add("edit-cell");
+        edit.appendChild(editBtn);
 
         let deleteImg = document.createElement("img");
         deleteImg.src = "img/delete.png";
         deleteImg.alt = "Delete";
-        deleteImg.style.width = "35px";
         deleteImg.style.cursor="pointer";
+        deleteImg.addEventListener("click", () => deletePlayer(player.id));
         deleteCell.classList.add("text-center");
+        deleteCell.classList.add("delete-cell");
         deleteCell.appendChild(deleteImg);
 
 
