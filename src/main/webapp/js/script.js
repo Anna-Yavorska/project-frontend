@@ -23,17 +23,17 @@ function initValues() {
     playersPerPage = document.getElementById("players-per-page-select").value;
 }
 
-function generateButtons(playersAmount){
+function generateButtons(playersAmount) {
     let buttonsContainer = document.getElementById("page-buttons-container");
-    let pagesCount = Math.ceil(playersAmount/playersPerPage);
+    let pagesCount = Math.ceil(playersAmount / playersPerPage);
 
     buttonsContainer.innerHTML = "";
-    for (let i = 1; i<=pagesCount; i++) {
+    for (let i = 1; i <= pagesCount; i++) {
         let button = document.createElement("button");
         button.textContent = i;
         button.classList.add("btn");
         button.classList.add("btn-outline-secondary");
-        button.addEventListener("click", ()=>{
+        button.addEventListener("click", () => {
             currentPage = i - 1;
             getPlayers(currentPage, playersPerPage)
                 .then(players => updateTable(players))
@@ -69,33 +69,33 @@ function getPlayersAmount() {
         .then((response) => response.text());
 }
 
-function deletePlayer(id){
-    if (!confirm('Do you really want delete the player?')){
+function deletePlayer(id) {
+    if (!confirm('Do you really want delete the player?')) {
         return;
     }
-    const requestOptions= {
+    const requestOptions = {
         method: "DELETE",
     };
     const requestUrl = BASE_URL + "/rest/players/" + id;
     fetch(requestUrl, requestOptions)
-        .then(response=>{
-        if (response.ok){
-            alert("Player is deleted");
-            console.log(id);
-            reloadPlayers();
-        }else {
-            alert("You can't delete this player");
-        }
-    })
+        .then(response => {
+            if (response.ok) {
+                alert("Player is deleted");
+                console.log(id);
+                reloadPlayers();
+            } else {
+                alert("You can't delete this player");
+            }
+        })
         .catch(error => console.error(error));
 }
 
-function reloadPlayers(){
+function reloadPlayers() {
     getPlayers(currentPage, playersPerPage)
         .then(players => updateTable(players));
 }
 
-function editAccountHandler(e){
+function editAccountHandler(e) {
     const accountId = e.currentTarget.value;
 
     const $currentRow = document.querySelector(`tr[data-account-id='${accountId}']`);
@@ -113,7 +113,7 @@ function editAccountHandler(e){
     $currentImage.src = "img/save.png";
     $currentRemoveImage.style.display = "none";
 
-    $currentImage.addEventListener("click", () =>{
+    $currentImage.addEventListener("click", () => {
         const params = {
             accountId: accountId,
             data: {
@@ -149,6 +149,7 @@ function editAccountHandler(e){
         return select;
     }
 }
+
 function createInput(value) {
     const $htmlInputElement = document.createElement('input');
 
@@ -156,13 +157,13 @@ function createInput(value) {
     $htmlInputElement.setAttribute('value', value);
     $htmlInputElement.setAttribute('data-value', value);
 
-    $htmlInputElement.addEventListener('input', e=>{
+    $htmlInputElement.addEventListener('input', e => {
         $htmlInputElement.setAttribute('data-value', `${e.currentTarget.value}`)
     })
     return $htmlInputElement;
 }
 
-function updateAccount({accountId, data}){
+function updateAccount({accountId, data}) {
     const requestUrl = BASE_URL + "/rest/players/" + accountId;
 
     fetch(requestUrl, {
@@ -235,21 +236,19 @@ function updateTable(json) {
         let editImg = document.createElement("img");
         editImg.src = "img/edit.png";
         editImg.alt = "Edit";
-        editImg.style.cursor="pointer";
+        editImg.style.cursor = "pointer";
         editBtn.appendChild(editImg);
         editBtn.value = player.id;
         editBtn.addEventListener("click", editAccountHandler);
-        edit.classList.add("text-center");
-        edit.classList.add("edit-cell");
+        edit.classList.add("text-center", "edit-cell");
         edit.appendChild(editBtn);
 
         let deleteImg = document.createElement("img");
         deleteImg.src = "img/delete.png";
         deleteImg.alt = "Delete";
-        deleteImg.style.cursor="pointer";
+        deleteImg.style.cursor = "pointer";
         deleteImg.addEventListener("click", () => deletePlayer(player.id));
-        deleteCell.classList.add("text-center");
-        deleteCell.classList.add("delete-cell");
+        deleteCell.classList.add("text-center", "delete-cell");
         deleteCell.appendChild(deleteImg);
 
 
@@ -267,3 +266,54 @@ function updateTable(json) {
         tableBody.appendChild(row);
     })
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    const raceSelect = document.getElementById('race');
+    const professionSelect = document.getElementById('profession');
+    const form = document.getElementById('createAccountForm');
+
+
+    function populateSelect(dataArray, selectElement) {
+        selectElement.innerHTML = dataArray.map(item => `<option value="${item}">${item}</option>`).join('');
+    }
+
+    populateSelect(races, raceSelect);
+    populateSelect(professions, professionSelect);
+
+
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const accountData = {
+            name: document.getElementById('name').value,
+            title: document.getElementById('title').value,
+            race: raceSelect.value,
+            profession: professionSelect.value,
+            level: Number(document.getElementById('level').value),
+            birthday: document.getElementById('birthday').value,
+            banned: document.getElementById('banned').checked
+        };
+        accountData.birthday = new Date(accountData.birthday).getTime();
+
+        const requestUrl = BASE_URL + "/rest/players";
+
+        fetch(requestUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Data-Type": "json",
+            },
+            body: JSON.stringify(accountData),
+        })
+            .then(response => {
+
+                if (response.ok) {
+                    form.reset();
+                    reloadPlayers();
+                } else {
+                    alert("Failed to update player. Please check the data.");
+                }
+            })
+            .catch(error => console.error("Error updating player:", error));
+    });
+});
